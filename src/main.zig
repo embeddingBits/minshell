@@ -3,16 +3,15 @@ const std = @import("std");
 pub fn main() !void {
 
     while (true) {
-        var read_buffer: [20]u8 = undefined;
+        var read_buffer: [50]u8 = undefined;
         var reader = std.fs.File.stdin().reader(&read_buffer);
         const stdin = &reader.interface;
 
         std.debug.print(">> ", .{});
+
         const line = try stdin.takeDelimiterExclusive('\n');
+        var args = std.mem.splitScalar(u8, line, ' ');
 
-        const trimmed = std.mem.trimRight(u8, line, "\r\n");
-
-        var args = std.mem.splitScalar(u8, trimmed, ' ');
         if (args.next()) |first| {
             if (std.mem.eql(u8, first, "exit")) {
                 std.debug.print("goodbye\n", .{});
@@ -37,6 +36,12 @@ pub fn main() !void {
 
                 const pwd = try std.fs.cwd().realpathAlloc(alloc, ".");
                 std.debug.print("{s}\n", .{pwd});
+            } 
+            if (std.mem.eql(u8, first, "echo")) {
+                while(args.next()) |i| {
+                    std.debug.print("{s} ", .{i});
+                }
+                std.debug.print("\n", .{});
             } 
         }
 
