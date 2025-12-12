@@ -12,12 +12,14 @@ pub fn main() !void {
         const line = try stdin.takeDelimiterExclusive('\n');
         var args = std.mem.splitScalar(u8, line, ' ');
 
+        const cmds = [_][]const u8{"exit", "type", "echo", "pwd", "ls"};
+
         if (args.next()) |first| {
             if (std.mem.eql(u8, first, "exit")) {
                 std.debug.print("goodbye\n", .{});
                 return;
             } 
-            if (std.mem.eql(u8, first, "ls")) {
+            else if (std.mem.eql(u8, first, "ls")) {
                 var dir = try std.fs.cwd().openDir(".", .{.iterate = true});
                 defer dir.close();
 
@@ -29,7 +31,7 @@ pub fn main() !void {
                 std.debug.print("\n", .{});
 
             } 
-            if (std.mem.eql(u8, first, "pwd")) {
+            else if (std.mem.eql(u8, first, "pwd")) {
                 var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
                 defer arena.deinit();
                 const alloc = arena.allocator();
@@ -37,14 +39,35 @@ pub fn main() !void {
                 const pwd = try std.fs.cwd().realpathAlloc(alloc, ".");
                 std.debug.print("{s}\n", .{pwd});
             } 
-            if (std.mem.eql(u8, first, "echo")) {
+            else if (std.mem.eql(u8, first, "echo")) {
                 while(args.next()) |i| {
                     std.debug.print("{s} ", .{i});
                 }
                 std.debug.print("\n", .{});
             } 
-        }
+            else if (std.mem.eql(u8, first, "type")) {
+                const target = args.next() orelse {
+                    std.debug.print("type: missing argument\n", .{});
+                    continue;
+                };
 
+                var found = false;
+
+                for (cmds) |cmd| {
+                    if (std.mem.eql(u8, target, cmd)) {
+                        std.debug.print("{s} is a builtin\n", .{target});
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found) {
+                    std.debug.print("type: {s} not found\n", .{target});
+                }
+            } else {
+                std.debug.print("{s} is not found\n", .{first});
+            }
+        }
     }
 }
 
