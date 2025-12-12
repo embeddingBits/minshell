@@ -6,5 +6,6 @@ Mini experimental shell in Zig from scratch
 - [x] `echo` command
 - [x] `exit` command
 - [x] `pwd` command
+- [x] `type` command
 - [ ] `cd` command
 
