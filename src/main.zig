@@ -28,23 +28,22 @@ pub fn main() !void {
 
 fn handleCommand(input: []const u8, allocator: std.mem.Allocator) !void {
     var args_split = std.mem.splitSequence(u8, input, " ");
-    if (args_split.next()) |arg| {
-        if (std.mem.eql(u8, arg, "echo")) {
-            try echoCommand(input);
-        } else if (std.mem.eql(u8, arg, "pwd")) {
-            try pwdCommand(allocator);
-        } else if (std.mem.eql(u8, arg, "exit")) {
-            try exitCommand();
-        } else if (std.mem.eql(u8, arg, "clear")) {
-            try clearCommand();
-        } else if (std.mem.eql(u8, arg, "cd")) {
-            cdCommand(args_split) catch {
-                std.debug.print("cd: {s} No such file or directory\n", .{args_split.rest()});
-            };
-        } 
-        else {
-            std.debug.print("command: {s} is not found\n", .{arg});
-        }
+    const command = args_split.next() orelse return;
+
+    if (std.mem.eql(u8, command, "echo")) {
+        try echoCommand(input);
+    } else if (std.mem.eql(u8, command, "pwd")) {
+        try pwdCommand(allocator);
+    } else if (std.mem.eql(u8, command, "exit")) {
+        try exitCommand();
+    } else if (std.mem.eql(u8, command, "clear")) {
+        try clearCommand();
+    } else if (std.mem.eql(u8, command, "cd")) {
+        // Get the argument (if any), trim whitespace
+        const arg = std.mem.trim(u8, args_split.rest(), &std.ascii.whitespace);
+        try cdCommand(arg);
+    } else {
+        std.debug.print("command: {s} is not found\n", .{command});
     }
 }
 
@@ -80,23 +79,20 @@ fn clearCommand() !void {
     std.debug.print("{s}", .{clear_screen});
 }
 
-fn cdCommand(args: anytype) !void {
+fn cdCommand(target: []const u8) !void {
+    const path = if (target.len == 0 or std.mem.eql(u8, target, "~") or std.mem.eql(u8, target, "~/"))
+        std.posix.getenv("HOME") orelse {
+            std.debug.print("cd: HOME environment variable not set\n", .{});
+            return error.HomeNotSet;
+        }
+    else
+        target;
 
-    if (std.mem.eql(u8, args.rest(), "~") and std.mem.eql(u8, args.rest(), "")) {
-        const home_dir = std.posix.getenv("HOME") orelse {
-            std.debug.print("Error: Env not set\n", .{});
-            return;
-        };
-        var dir = try std.fs.cwd().openDir(home_dir, .{});
-        defer dir.close();
-
-        try dir.setAsCwd();
-    } else {
-        var dir = try std.fs.cwd().openDir(args.rest(), .{});
-        defer dir.close();
-
-        try dir.setAsCwd();
-    }
+    // Use std.os.chdir — safe, simple, no fd issues
+    std.posix.chdir(path) catch |err| {
+        std.debug.print("cd: {s}: No such file or directory\n", .{path});
+        return err;
+    };
 }
 
 fn exitCommand() !void {
