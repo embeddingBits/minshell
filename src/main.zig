@@ -3,6 +3,8 @@ const std = @import("std");
 var dirStack = std.ArrayListUnmanaged([]u8){};
 const cmd_list = [_][]const u8{"exit", "cd", "pwd", "type", "echo", "builtin", "clear", "dirs", "pushd", "popd"};
 
+const status = 0;
+
 pub fn main() !void {
 
     const initCwd = try std.fs.cwd().realpathAlloc(std.heap.page_allocator, ".");
@@ -186,11 +188,11 @@ fn spawnAndWait(allocator: std.mem.Allocator, argv: []const []const u8) !void {
 }
 
 fn trueCommand() bool {
-    return true;
+    status = 0;
 }
 
 fn falseCommand() bool {
-    return false;
+    status = 1;
 }
 
 //fn dirsCommand(allocator: std.mem.Allocator) !void {
