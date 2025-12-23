@@ -21,6 +21,17 @@ pub fn main() !void {
         var reader = std.fs.File.stdin().reader(&read_buffer);
         const stdin = &reader.interface;
 
+        try displayPrompt(allocator);
+
+        const input = stdin.takeDelimiterExclusive('\n') catch continue;
+        if (input.len == 0) continue;
+
+        try handleCommand(input, allocator);
+    }
+}
+
+fn displayPrompt(allocator: std.mem.Allocator) !void {
+
         // To display prompt
         const user = std.posix.getenv("USER") orelse "user";
         var hostname_buf: [64]u8 = undefined;
@@ -30,12 +41,6 @@ pub fn main() !void {
         const dir_name = std.fs.path.basename(cwd_path);
 
         std.debug.print("[{s}@{s} {s}]$ ", .{ user, hostname, dir_name });
-
-        const input = stdin.takeDelimiterExclusive('\n') catch continue;
-        if (input.len == 0) continue;
-
-        try handleCommand(input, allocator);
-    }
 }
 
 fn parseCommand(input: []const u8, allocator: std.mem.Allocator) !ParsedCommand {
